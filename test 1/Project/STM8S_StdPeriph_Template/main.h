@@ -1,17 +1,24 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
-struct si_frequency_configuration {
-  uint8_t outdiv, band, nprescaler;
-  uint32_t m; uint16_t n;
-  float lsb_tuning_resolution;
-};
+typedef struct {
+  uint8_t data[512];		// Data
+  uint16_t size;		// Packet size in bits
+  uint16_t max_size;	        // Max. Packet size in bits (size of modem packet)
+  uint16_t crc;			// CRC
+} ax25_t;
 
-enum si_filter_model {
-  SI_FILTER_DEFAULT,
-  SI_FILTER_APRS,
-  SI_FILTER_RSID
-};
+typedef enum {
+	TEL_SATS,
+	TEL_TTFF,
+	TEL_VBAT,
+	TEL_VSOL,
+	TEL_PBAT,
+	TEL_ISOL,
+	TEL_PRESS,
+	TEL_TEMP,
+	TEL_HUM
+} telemetry_t;
 
 /**
  * =============================================================================
@@ -292,15 +299,22 @@ typedef struct {
 /* Private function prototypes -----------------------------------------------*/
 void Delay(uint32_t);
 void USART_Initialization(void);
+void UART1_Init_Fast();
+void UART1_DeInit_Fast();
+void UART1_ENABLE();
 void USART_SendString(char *);
 void USART_SendChar(char);
+
 void SPI_Initialization(void);
+void SPI_Init_Fast();
 void SPI_wait(void);
 void SPI_sendByte(uint8_t);
 uint8_t SPI_ReadByte(void);
 void SPI_ClearRXBuffer();
 uint8_t SPI_RWByte(uint8_t value);
+
 void GPIO_Initialization(void);
+void GPIO_Init_Fast();
 
 void _si_trx_cs_enable();
 void _si_trx_cs_disable();
@@ -329,10 +343,22 @@ void radioShutdown(void);
 void radioTurnOn(void);
 uint8_t radioTune(uint32_t frequency, uint16_t shift, int8_t level, uint16_t size);
 int8_t Si4464_getTemperature(void);
-
-
-
 void Si4463_CS(uint8_t);
+
+void ax25_init(ax25_t *packet);
+void ax25_add_header(ax25_t *packet, uint8_t *callsign, uint8_t ssid, uint8_t *path, uint16_t preamble);
+void ax25_add_footer(ax25_t *packet);
+uint16_t ax25_CRC(ax25_t *packet);
+void ax25_add_sync(ax25_t *packet);
+void ax25_add_flag(ax25_t *packet);
+void ax25_add_string(ax25_t *packet, uint8_t *string);
+void ax25_add_path(ax25_t *packet, uint8_t *callsign, uint8_t ssid, uint8_t last);
+void ax25_add_byte(ax25_t *packet, uint8_t byte);
+
+uint32_t aprs_encode_message(ax25_t* buffer, uint8_t * callsign, uint8_t ssid, uint8_t * path, uint16_t preamble, uint8_t *text);
+
+
+
 void Timer1_Init();
 void Timer1_1200Hz();
 void Timer1_2200Hz();

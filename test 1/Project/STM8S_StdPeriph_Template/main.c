@@ -32,7 +32,13 @@
 
 /* Private defines -----------------------------------------------------------*/
 #define AX25_FLAG 0x7E
-volatile char tx_buffer[256];
+#define CRC_POLY 0x8408
+#define APRS_DEST_CALLSIGN				"APECAN" // APExxx = Pecan device
+#define APRS_DEST_SSID                                  0
+#define APRS_OWN_CALLSIGN				"SP5RZP"
+//ax25_t APRS_frame;
+    
+char tx_buffer[256];
 char tx_buffer_head = 0;
 char tx_buffer_tail = 0;
 #define RADIO_CLK	30000000UL
@@ -47,23 +53,23 @@ uint8_t initialized = 0;
 void main(void)
 {
   /* Select fCPU = 16MHz */
-  CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV1);
+  CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV1);      //118 B
   
   /* Init UART */
-  USART_Initialization();
+  USART_Initialization();       //1182 B -> 85 B
   
   /* Init SPI */
-  SPI_Initialization();
+  SPI_Initialization();         //334 B -> 78 B
   
-  GPIO_Initialization();
+  GPIO_Initialization();        //263 B -> 57 B
    
   Delay(10000);
-  Timer1_Init();
-  Timer2_Init();
+  Timer1_Init();                //716 B
+  Timer2_Init();                //516 B
   enableInterrupts();
   
   //inicjalizacja radia
-  initAFSK();
+  initAFSK();                   //2984 B
   Timer1_2200Hz();
   
   /*
@@ -76,6 +82,12 @@ void main(void)
   */
   
   /* Infinite loop */
+  
+  
+  //aprs_encode_message(&APRS_frame, "SP5RZP", 0, "TCPIP*,DB0LJ*", 10, "test APRS");
+  
+  while(1){}
+  /*
   char ramka[] = "SP5RZP>APT310,TCPIP*,DB0LJ*:!4816.00N/00947.07E>000/000/A=000000/Walter, TinyTrak 3";
  
   while (1)
@@ -111,7 +123,7 @@ void main(void)
     Delay(1000000); 
     
   }
-   
+   */
 }
 
 /**
@@ -128,38 +140,92 @@ void Delay(uint32_t nCount)
     }
 }
 
+//======================================================================================
+//                              GPIO
+//======================================================================================
+
 void GPIO_Initialization(void){
-  GPIO_Init(GPIOD, (GPIO_Pin_TypeDef)GPIO_PIN_2, GPIO_MODE_OUT_PP_HIGH_FAST);   //Si4463 CS
-  GPIO_WriteHigh (GPIOD, GPIO_PIN_2);
+  /*
+  GPIO_Init(GPIOD, (GPIO_Pin_TypeDef)GPIO_PIN_2, GPIO_MODE_OUT_PP_HIGH_FAST);   //Si4463 CS   //13 B
+  GPIO_WriteHigh (GPIOD, GPIO_PIN_2);         //9 B
   
-  GPIO_Init(GPIOC, (GPIO_Pin_TypeDef)GPIO_PIN_3, GPIO_MODE_OUT_PP_HIGH_FAST);   //
+  GPIO_Init(GPIOC, (GPIO_Pin_TypeDef)GPIO_PIN_3, GPIO_MODE_OUT_PP_HIGH_FAST);   //13 B
   
-  GPIO_Init(GPIOD, (GPIO_Pin_TypeDef)GPIO_PIN_4, GPIO_MODE_OUT_PP_HIGH_FAST);   //
-  GPIO_WriteHigh (GPIOD, GPIO_PIN_4);
+  GPIO_Init(GPIOD, (GPIO_Pin_TypeDef)GPIO_PIN_4, GPIO_MODE_OUT_PP_HIGH_FAST);   //13 B
+  GPIO_WriteHigh (GPIOD, GPIO_PIN_4);           //9 B
+  */
+  GPIO_Init_Fast();   //57 B
 }
 
-/**
-  * @brief USART Init function
-  *     UART1 configured as follow:
-  *     - Word Length = 8 Bits
-  *     - 1 Stop Bit
-  *     - No parity
-  *     - BaudRate = 9600 baud
-  *     - UART1 Clock enabled
-  *     - Polarity Low
-  *     - Phase Middle
-  *     - Last Bit enabled
-  *      Receive and transmit enabled 
-  * @param none
-  * @retrival none
-  */
-void USART_Initialization(void){
-  UART1_DeInit();
+void GPIO_Init_Fast(){
+  //PD2 - SI4463 CS pin
+  GPIOD->CR2 &= ~0x04;  //slow slope 2MHz
+  GPIOD->ODR |= 0x04;   //Init High state
+  GPIOD->DDR |= 0x04;   //Output
+  GPIOD->CR1 |= 0x04;   //Push-Pull
+  GPIOD->ODR |= 0x04;   //Init High state
   
-  UART1_Init((uint32_t)115200, UART1_WORDLENGTH_8D, UART1_STOPBITS_1, UART1_PARITY_NO, 
-              UART1_SYNCMODE_CLOCK_DISABLE,
-              UART1_MODE_TXRX_ENABLE);
-  UART1_Cmd(ENABLE);
+  //PC3 - ??
+  GPIOC->CR2 &= ~0x08;  //slow slope 2MHz
+  GPIOC->DDR |= 0x08;   //Output
+  GPIOC->CR1 |= 0x08;   //Push-Pull
+  
+  //PD4 - ??
+  GPIOD->CR2 &= ~0x10;  //slow slope 2MHz
+  GPIOD->ODR |= 0x10;   //Init High state
+  GPIOD->DDR |= 0x10;   //Output
+  GPIOD->CR1 |= 0x10;   //Push-Pull
+  GPIOD->ODR |= 0x10;   //Init High state
+}
+
+//=======================================================================================
+//                              UART
+//=======================================================================================
+void USART_Initialization(void){
+  UART1_DeInit_Fast();     //47 B
+  
+  //UART1_Init((uint32_t)115200, UART1_WORDLENGTH_8D, UART1_STOPBITS_1, UART1_PARITY_NO, UART1_SYNCMODE_CLOCK_DISABLE, UART1_MODE_TXRX_ENABLE); //1163 B
+  UART1_Init_Fast();    //29 B
+  UART1_ENABLE();       //19 B -> 9 B
+}
+
+void UART1_Init_Fast(){
+  #define UART1_baud 115200
+  #define UART1_BBR1 0x08
+  #define UART1_BBR2 0x0B
+
+  UART1->CR1 = 0x00;           //set 8-bit word length, no parity, UART enabled (change for low power)
+  UART1->CR3 = 0x00;           //set 1 bit Stop
+
+  UART1->BRR1 = UART1_BBR1; 
+  UART1->BRR2 = UART1_BBR2;       
+   
+  UART1->CR2 |= 0x08 | 0x04;    //RX i TX enabled
+}
+
+void UART1_DeInit_Fast(){
+  /* Clear the Idle Line Detected bit in the status register by a read
+  to the UART1_SR register followed by a Read to the UART1_DR register */
+  
+  (void)UART1->SR;    //3B
+  (void)UART1->DR;    //3B
+  
+  UART1->BRR2 = 0x00;  // Set UART1_BRR2 to reset value 0x00    //4B
+  UART1->BRR1 = 0x00;  // Set UART1_BRR1 to reset value 0x00    //4B
+  
+  UART1->CR1 = 0x00;  // Set UART1_CR1 to reset value 0x00    //4B
+  UART1->CR2 = 0x00;  // Set UART1_CR2 to reset value 0x00    //4B
+  UART1->CR3 = 0x00;  // Set UART1_CR3 to reset value 0x00    //4B
+  UART1->CR4 = 0x00;  // Set UART1_CR4 to reset value 0x00    //4B
+  UART1->CR5 = 0x00;  // Set UART1_CR5 to reset value 0x00    //4B
+  
+  UART1->GTR = 0x00;    //4B
+  UART1->PSCR = 0x00;   //4B
+}
+
+void UART1_ENABLE(){
+    /* UART1 Enable */
+    UART1->CR1 &= (~0x20); 
 }
 
 void USART_SendString(char * value){
@@ -174,24 +240,22 @@ void USART_SendChar(char value){
   UART1_SendData8(value);
 }
 
-/**
-  * @brief SPI Init function
-  * @param none
-  * @retrival none
-  */
+//=======================================================================================
+//                              SPI
+//=======================================================================================
 void SPI_Initialization(void){
-  SPI_DeInit();
+  SPI_DeInit();       //25 B
   /* Initialize SPI in Slave mode  */
-  SPI_Init(SPI_FIRSTBIT_MSB, 
-           SPI_BAUDRATEPRESCALER_64, 
-           SPI_MODE_MASTER, 
-           SPI_CLOCKPOLARITY_LOW,
-           SPI_CLOCKPHASE_1EDGE, 
-           SPI_DATADIRECTION_2LINES_FULLDUPLEX, 
-           SPI_NSS_SOFT,
-           (uint8_t)0x07);
+  //SPI_Init(SPI_FIRSTBIT_MSB, SPI_BAUDRATEPRESCALER_64, SPI_MODE_MASTER, SPI_CLOCKPOLARITY_LOW, SPI_CLOCKPHASE_1EDGE, SPI_DATADIRECTION_2LINES_FULLDUPLEX, SPI_NSS_SOFT, (uint8_t)0x07);       //305 B
+  SPI_Init_Fast();    //8 B
   /* SPI Enable */
-  SPI_Cmd(ENABLE);
+  SPI_Cmd(ENABLE);    //29 B
+}
+//void SPI_Init(SPI_FirstBit_TypeDef FirstBit, SPI_BaudRatePrescaler_TypeDef BaudRatePrescaler, SPI_Mode_TypeDef Mode, SPI_ClockPolarity_TypeDef ClockPolarity, SPI_ClockPhase_TypeDef ClockPhase, SPI_DataDirection_TypeDef Data_Direction, SPI_NSS_TypeDef Slave_Management, uint8_t CRCPolynomial)
+
+void SPI_Init_Fast(){
+  SPI->CR1 = 0x28 | 0x04;      //MSB first, x64 prescaler, polarity Low, Master
+  SPI->CR2 = 0x02 | 0x01;      //Full duplex, Software slave management enabled, Master
 }
 
 void SPI_wait(void){
@@ -268,7 +332,6 @@ void _si_trx_cs_enable(){
 void _si_trx_cs_disable(){
   Si4463_CS(0);
 }
-
 
 uint8_t spi_bitbang_transfer(uint8_t tmp){
   uint8_t wynik = SPI_RWByte(tmp);
@@ -610,6 +673,155 @@ int8_t Si4464_getTemperature(void) {
   */
   return 0;
 }
+
+
+//===============================================================================================
+//                              APRS
+//===============================================================================================
+/*
+void ax25_init(ax25_t *packet){
+  packet->max_size = 500;
+  packet->size = 0;
+}
+
+void ax25_add_header(ax25_t *packet, uint8_t *callsign, uint8_t ssid, uint8_t *path, uint16_t preamble){
+  uint8_t i, j;
+  uint8_t tmp[8];
+  packet->size = 0;
+
+  // Send preamble ("a bunch of 0s")
+  preamble = preamble * 3 / 20;
+  for(i=0; i<preamble; i++) ax25_add_sync(packet);
+
+  // Send flag
+  for(uint8_t i=0; i<4; i++) ax25_add_flag(packet);
+
+  ax25_add_path(packet, APRS_DEST_CALLSIGN, APRS_DEST_SSID, 0);	// Destination callsign
+  ax25_add_path(packet, callsign, ssid, path[0] == 0 || path == 0);	// Source callsign
+
+  // Parse path
+  for(i=0, j=0; (path[i-1] != 0 || i == 0) && path != 0; i++) {
+    if(path[i] == ',' || path[i] == 0) { // Found block in path
+      if(!j) // Block empty
+              break;
+
+      // Filter Path until '-'
+      tmp[j] = 0;
+      uint8_t p[8];
+      uint8_t t;
+      for(t=0; t<j && tmp[t] != '-'; t++)
+              p[t] = tmp[t];
+      p[t] = 0;
+
+      // Filter TTL
+      uint8_t s = ((tmp[t] == '-' ? tmp[++t] : tmp[--t])-48) & 0x7;
+
+      if(s != 0)
+              ax25_add_path(packet, p, s, path[i] == 0);
+      j = 0;
+
+    } else {
+      tmp[j++] = path[i];
+    }
+  }
+
+  // Control field: 3 = APRS-UI frame
+  ax25_add_byte(packet, 0x03);
+
+  // Protocol ID: 0xf0 = no layer 3 data
+  ax25_add_byte(packet, 0xf0);
+}
+
+void ax25_add_footer(ax25_t *packet){
+  // Save the crc so that it can be treated it atomically
+  uint16_t final_crc = ax25_CRC(packet);
+
+  // Send CRC
+  ax25_add_byte(packet, ~(final_crc & 0xff));
+  final_crc >>= 8;
+  ax25_add_byte(packet, ~(final_crc & 0xff));
+
+  // Signal the end of frame
+  ax25_add_flag(packet);
+}
+
+uint16_t ax25_CRC(ax25_t *packet){              //--------------NIEPEWNE
+  uint8_t i;
+  uint8_t j;
+  uint16_t crc_reg = 0xFFFF;
+
+  // No data so return zeros 
+  if (packet->size == 0)
+      return (~crc_reg);
+
+  // Loop through each byte 
+  for (i = 0; i < packet->size; i++) {
+    // Loop through each bit 
+    for (j=0; j < 8; j++, packet->data[i] >>= 1) {
+      if ((crc_reg & 0x0001) ^ (packet->data[i] & 0x0001)) crc_reg = (crc_reg >> 1) ^ CRC_POLY;
+       else  crc_reg >>= 1;
+    }
+  }
+  // Return 1's complement
+  packet->crc = (~crc_reg);
+  return (~crc_reg);
+}
+
+void ax25_add_sync(ax25_t *packet){
+  if(packet->size >= packet->max_size) return; // Prevent buffer overrun
+  packet->data[packet->size++] = 0x00;
+}
+
+void ax25_add_flag(ax25_t *packet){
+  if(packet->size >= packet->max_size) return; // Prevent buffer overrun
+  packet->data[packet->size++] = AX25_FLAG;
+}
+
+void ax25_add_string(ax25_t *packet, uint8_t *string){
+  int i;
+  for(i=0; string[i]; i++) {
+    ax25_add_byte(packet, string[i]);
+  }
+}
+
+void ax25_add_path(ax25_t *packet, uint8_t *callsign, uint8_t ssid, uint8_t last){
+  uint8_t j;
+
+  // Transmit callsign
+  for(j = 0; callsign[j]; j++) ax25_add_byte(packet, callsign[j] << 1);
+
+  // Transmit pad
+  for( ; j < 6; j++) ax25_add_byte(packet, ' ' << 1);
+
+  // Transmit SSID. Termination signaled with last bit = 1
+  ax25_add_byte(packet, ('0' + ssid) << 1 | (last & 0x1));
+}
+
+void ax25_add_byte(ax25_t *packet, uint8_t byte){
+  if(packet->size >= packet->max_size) return; // Prevent buffer overrun
+  packet->data[packet->size++] = byte;
+}
+
+uint32_t aprs_encode_message(ax25_t* buffer, uint8_t * callsign, uint8_t ssid, uint8_t * path, uint16_t preamble, uint8_t *text){
+  ax25_init(buffer);
+
+  // Encode APRS header
+  ax25_add_header(buffer, callsign, ssid, path, preamble);
+  ax25_add_byte(buffer, ':');              //identyfikator typu wiadomoœci
+  ax25_add_byte(buffer, ':');
+  ax25_add_string(buffer, "         ");
+  ax25_add_byte(buffer, ':');
+  ax25_add_string(buffer, text);
+  ax25_add_byte(buffer, '{');
+  ax25_add_byte(buffer, '1');
+
+  // Send footer
+  ax25_add_footer(buffer);
+
+  return buffer->size;
+}
+*/
+
 //==========================================================================================================
 //                              Timer
 //==========================================================================================================
