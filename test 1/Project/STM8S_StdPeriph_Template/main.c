@@ -36,11 +36,8 @@
 #define APRS_DEST_CALLSIGN				"APECAN" // APExxx = Pecan device
 #define APRS_DEST_SSID                                  0
 #define APRS_OWN_CALLSIGN				"SP5RZP"
-//ax25_t APRS_frame;
-    
-char tx_buffer[256];
-char tx_buffer_head = 0;
-char tx_buffer_tail = 0;
+ax25_t APRS_frame;
+
 #define RADIO_CLK	30000000UL
 
 uint32_t outdiv;
@@ -72,58 +69,39 @@ void main(void)
   initAFSK();                   //2984 B
   Timer1_2200Hz();
   
-  /*
-  while(1){
-    Timer1_2200Hz();
+  
+  while(0){
+    //Timer1_2200Hz();
     Delay(1000000);
-    Timer1_1200Hz();
+    //Timer1_1200Hz();
     Delay(1000000);
   }
-  */
+  
+  
   
   /* Infinite loop */
   
   
-  //aprs_encode_message(&APRS_frame, "SP5RZP", 0, "TCPIP*,DB0LJ*", 10, "test APRS");
-  
-  while(1){}
-  /*
-  char ramka[] = "SP5RZP>APT310,TCPIP*,DB0LJ*:!4816.00N/00947.07E>000/000/A=000000/Walter, TinyTrak 3";
- 
-  while (1)
-  {
-    USART_SendString("loop!\r\n");
-    for(uint8_t j=0;j<20;j++){
-      tx_buffer_queue(0x7E);
-    }
-    uint8_t i=0;
-    while(ramka[i]){
-      tx_buffer_queue(ramka[i]);
-      i++;
-    }
-    tx_buffer_queue(0x3C);
-    tx_buffer_queue(0xF2);
-
+  aprs_encode_message(&APRS_frame, "SP5RZP", 1, "WIDE2-2", 40, "!5225.85NS01654.50E#PHG4480 SPn,W5 Poznan Digi");
+  while (1){
    
     
     
     
     //do we have any data to transmit?
-    if (!tx_buffer_empty()) {
+    if (APRS_frame.point <= APRS_frame.size) {
       //Si4463_TX(); // enter transmit mode 
       TIM1_Cmd(ENABLE);
-          // wait until everything has been sent
-          while (!tx_buffer_empty()) {
-            Delay(100);
-          }
+      // wait until everything has been sent
+      while (!(APRS_frame.end)) {}
+      TIM1_Cmd(DISABLE);
+      Delay(500000);
+      APRS_frame.point = 0;
+      APRS_frame.end = 0;
+
     }
-    //Si4463_RX();
-    TIM1_Cmd(DISABLE);
-    
-    Delay(1000000); 
     
   }
-   */
 }
 
 /**
@@ -548,11 +526,12 @@ void setModemAFSK(void) {
 
 	// Setup the NCO data rate for APRS
         uint32_t speed = 4400;
-	uint8_t setup_data_rate[] = {0x11, 0x20, 0x03, 0x03, (uint8_t)(speed >> 16), (uint8_t)(speed >> 8), (uint8_t)speed};
-	Si4464_write(setup_data_rate, 7);
+	//uint8_t setup_data_rate[] = {0x11, 0x20, 0x03, 0x03, (uint8_t)(speed >> 16), (uint8_t)(speed >> 8), (uint8_t)speed};
+	uint8_t setup_data_rate[] = {0x11, 0x20, 0x03, 0x03, 0x00, 0x11, 0};
+        Si4464_write(setup_data_rate, 7);
 
 	// Use 2GFSK from async GPIO1
-	uint8_t use_2gfsk[] = {0x11, 0x20, 0x01, 0x00, 0x2B};
+	uint8_t use_2gfsk[] = {0x11, 0x20, 0x01, 0x00, 0x2B};   //2B
 	Si4464_write(use_2gfsk, 5);
 
 	// Set AFSK filter
@@ -678,10 +657,11 @@ int8_t Si4464_getTemperature(void) {
 //===============================================================================================
 //                              APRS
 //===============================================================================================
-/*
+
 void ax25_init(ax25_t *packet){
   packet->max_size = 500;
   packet->size = 0;
+  packet->point = 0;
 }
 
 void ax25_add_header(ax25_t *packet, uint8_t *callsign, uint8_t ssid, uint8_t *path, uint16_t preamble){
@@ -690,11 +670,11 @@ void ax25_add_header(ax25_t *packet, uint8_t *callsign, uint8_t ssid, uint8_t *p
   packet->size = 0;
 
   // Send preamble ("a bunch of 0s")
-  preamble = preamble * 3 / 20;
   for(i=0; i<preamble; i++) ax25_add_sync(packet);
 
   // Send flag
-  for(uint8_t i=0; i<4; i++) ax25_add_flag(packet);
+  //for(uint8_t i=0; i<preamble; i++) ax25_add_flag(packet);
+  ax25_add_flag(packet);
 
   ax25_add_path(packet, APRS_DEST_CALLSIGN, APRS_DEST_SSID, 0);	// Destination callsign
   ax25_add_path(packet, callsign, ssid, path[0] == 0 || path == 0);	// Source callsign
@@ -746,6 +726,7 @@ void ax25_add_footer(ax25_t *packet){
 }
 
 uint16_t ax25_CRC(ax25_t *packet){              //--------------NIEPEWNE
+  /*
   uint8_t i;
   uint8_t j;
   uint16_t crc_reg = 0xFFFF;
@@ -765,6 +746,8 @@ uint16_t ax25_CRC(ax25_t *packet){              //--------------NIEPEWNE
   // Return 1's complement
   packet->crc = (~crc_reg);
   return (~crc_reg);
+  */
+  return 0xffff;
 }
 
 void ax25_add_sync(ax25_t *packet){
@@ -820,7 +803,7 @@ uint32_t aprs_encode_message(ax25_t* buffer, uint8_t * callsign, uint8_t ssid, u
 
   return buffer->size;
 }
-*/
+
 
 //==========================================================================================================
 //                              Timer
@@ -867,14 +850,14 @@ void Timer1_Init(){
 }
 
 void Timer1_1200Hz(){
-  uint16_t TIM1_Prescaler = 1892;
+  uint16_t TIM1_Prescaler = 1896;
   /* Set the Prescaler value */
   TIM1->PSCRH = (uint8_t)(TIM1_Prescaler >> 8);
   TIM1->PSCRL = (uint8_t)(TIM1_Prescaler);
 }
 
 void Timer1_2200Hz(){
-  uint16_t TIM1_Prescaler = 1032;
+  uint16_t TIM1_Prescaler = 1044;
   /* Set the Prescaler value */
   TIM1->PSCRH = (uint8_t)(TIM1_Prescaler >> 8);
   TIM1->PSCRL = (uint8_t)(TIM1_Prescaler);
@@ -882,7 +865,7 @@ void Timer1_2200Hz(){
 
 void Timer2_Init(){
   TIM2_DeInit();
-  TIM2_TimeBaseInit(TIM2_PRESCALER_2, 11350);
+  TIM2_TimeBaseInit(TIM2_PRESCALER_2, 6630);    //1200 = X/(2*6630) Fclk = 15.912.000 ~fcpu
   
   TIM2_ITConfig(TIM2_IT_UPDATE, ENABLE);
 
@@ -891,6 +874,8 @@ void Timer2_Init(){
 }
 
 void Timer2_ISR(){
+  //GPIOC->ODR ^= 0x08;   //Push-Pull
+  //GPIO_WriteReverse(GPIOC, GPIO_PIN_3);
   /* byte to send (LSB first) */
   static unsigned char bits = 0;
 
@@ -910,8 +895,8 @@ void Timer2_ISR(){
   if (bit_count == 0) {
 
           /* Do we have any bytes that need to be sent? */
-          if (tx_buffer_empty()) {
-
+          if (APRS_frame.point >= APRS_frame.size) {
+                  APRS_frame.end = 1;
                   /* The buffer is empty. We can stop sending now.
                    * The loop in main() will detect an empty buffer
                    * and disable this interrupt for us.
@@ -919,7 +904,7 @@ void Timer2_ISR(){
                   return;
           }
 
-          bits = tx_buffer_dequeue();
+          bits = APRS_frame.data[APRS_frame.point++];
           bit_count = 8;
           sending_ax25_flag = (bits == AX25_FLAG);
   }
@@ -949,7 +934,7 @@ void Timer2_ISR(){
           bit_count--;
   }
 }
-
+/*
 char tx_buffer_dequeue(void) {
 
 	char c;
@@ -964,9 +949,9 @@ char tx_buffer_dequeue(void) {
 
 void tx_buffer_queue(char c) {
 
-	/* since tx_buffer_tail is an unsigned char, it will roll over
-	 * to 0 after it gets to 255, avoiding an overflow of tx_buffer
-	 */
+	// since tx_buffer_tail is an unsigned char, it will roll over
+        // to 0 after it gets to 255, avoiding an overflow of tx_buffer
+	//
 	tx_buffer[tx_buffer_tail++] = c;
 }
 
@@ -974,6 +959,8 @@ char tx_buffer_empty(void) {
 
 	return (tx_buffer_head == tx_buffer_tail);
 }
+*/
+
 
 #ifdef USE_FULL_ASSERT
 

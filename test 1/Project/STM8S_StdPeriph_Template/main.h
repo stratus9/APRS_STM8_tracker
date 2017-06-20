@@ -6,6 +6,8 @@ typedef struct {
   uint16_t size;		// Packet size in bits
   uint16_t max_size;	        // Max. Packet size in bits (size of modem packet)
   uint16_t crc;			// CRC
+  uint16_t point;             // tx pointer
+  uint8_t end;
 } ax25_t;
 
 typedef enum {
