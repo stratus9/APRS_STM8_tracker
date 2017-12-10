@@ -61,20 +61,18 @@ void main(void)
   Delay(10000);
   Timer1_Init();
   Timer2_Init();
+  Timer1_2200Hz();
   enableInterrupts();
   
-  Si4463_RX();
-  Timer1_2200Hz();
+  Si4463_TX();
+  //Si4463_TX();
   /* Infinite loop */
                 
-  while (1)
-  {
-    USART_SendString("loop!\r\n");
-    
+  while (1){
     for(uint8_t i = 0; i< 25; i++) tx_buffer_queue(0x7E);
     
     tx_buffer_string("APRS,TCPXX*,qAX,CWOP-5:@072357z4123.75N/09459.60W_218/004g008t020r000p000P000h43b10104eCumulusFO");
-
+    tx_buffer_queue(0x7E);
     
     
     /* do we have any data to transmit? */

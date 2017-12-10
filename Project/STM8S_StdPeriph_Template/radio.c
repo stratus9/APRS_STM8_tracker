@@ -33,29 +33,27 @@ void Si4463_CS(uint8_t value){
   else GPIO_WriteHigh(GPIOD, GPIO_PIN_2);
 }
 
-void Si4463_Init(void){
+
+
+void Si4463_Init_AFSK(){
+  Si4463_OFF();
+  Delay(1000);
+  Si4463_ON();
+  Delay(1000);
+  
   Si4463_RF_POWER_UP();
+  Si4463_XO_TUNE();
   Si4463_GPIO_PIN_CFG();
-  Si4463_RF_GLOBAL_XO_TUNE_2();
-  Si4463_RF_GLOBAL_CONFIG_1();
-  Si4463_RF_INT_CTL_ENABLE_1();
-  Si4463_RF_FRR_CTL_A_MODE_4();
-  Si4463_RF_MODEM_MOD_TYPE_12();
-  Si4463_RF_MODEM_FREQ_DEV_0_1();
-  Si4463_RF_MODEM_TX_RAMP_DELAY_8();
-  Si4463_RF_MODEM_BCR_OSR_1_9();
-  Si4463_RF_MODEM_AFC_GEAR_7();
-  Si4463_RF_MODEM_AGC_CONTROL_1();
-  Si4463_RF_MODEM_AGC_WINDOW_SIZE_9();
-  Si4463_RF_MODEM_OOK_CNT1_8();
-  Si4463_RF_MODEM_RSSI_COMP_1();
-  Si4463_RF_MODEM_CLKGEN_BAND_1();
-  Si4463_RF_MODEM_CHFLT_RX1_CHFLT_COE13_7_0_12();
-  Si4463_RF_MODEM_CHFLT_RX1_CHFLT_COE1_7_0_12();
-  Si4463_RF_MODEM_CHFLT_RX2_CHFLT_COE7_7_0_12();
+  
+  Si4463_PREAMBLE_DISABLE();
+  Si4463_NOSYNC_WORD();
+  Si4463_NCO_MODULO();
+  Si4463_NCO_DATA_RATE_APRS();
+  Si4463_MODULATION();
+  Si4463_AFSK_FILTER();
+  Si4463_FREQ();
+  Si4463_DEVIATION();
   Si4463_RF_PA_MODE_4();
-  Si4463_RF_SYNTH_PFDCP_CPFF_7();
-  Si4463_RF_FREQ_CONTROL_INTE_8();
 }
 
 void Si4463_ON(){
@@ -64,6 +62,19 @@ void Si4463_ON(){
 
 void Si4463_OFF(){
   GPIO_WriteHigh (GPIOD, GPIO_PIN_4);
+}
+
+void Si4463_XO_TUNE(){                  //zostaje
+  Si4463_CS(1);
+  SPI_sendByte(0x11);   //SET_PROPERTY Command
+  SPI_sendByte(0x00);   //GROUP - group 0x00
+  SPI_sendByte(0x02);   //NUM_PROPS - 2 proporties to write
+  SPI_sendByte(0x00);   //START_PROP - start from 0x00
+  SPI_sendByte(0x46);   //frequency adjustment
+  SPI_sendByte(0x00);
+  Si4463_CS(0);
+  
+  while(Si4463_CTS() != 0xFF){}
 }
 
 uint8_t Si4463_PartInfo(void){
@@ -116,7 +127,7 @@ uint8_t Si4463_FuncInfo(void){
   return 0;
 }
 
-void Si4463_RF_POWER_UP(void){
+void Si4463_RF_POWER_UP(void){          //zostaje       
   Si4463_CS(1);
   SPI_sendByte(0x02);   //POWER_UP Command
   SPI_sendByte(0x01);   //Boot main application image
@@ -130,7 +141,7 @@ void Si4463_RF_POWER_UP(void){
   while(Si4463_CTS() != 0xFF){}
 }
 
-void Si4463_GPIO_PIN_CFG(){
+void Si4463_GPIO_PIN_CFG(){             //zostaje
   Si4463_CS(1);
   SPI_sendByte(0x13);   //GPIO_PIN_CFG Command
   SPI_sendByte(0x00);   //GPIO0 - Do not modify the behavior of this pin, Disable pullup
@@ -158,275 +169,165 @@ void Si4463_RF_GLOBAL_XO_TUNE_2(){
   while(Si4463_CTS() != 0xFF){}
 }
 
-void Si4463_RF_GLOBAL_CONFIG_1(){
+void Si4463_MODULATION(){               //zostaje
+#define TX_DIRECT_MODE_TYPE_SYNC 0x00
+#define TX_DIRECT_MODE_TYPE_ASYNC 0x80
+#define TX_DIRECT_MODE_GPIO_0 0x00<<5
+#define TX_DIRECT_MODE_GPIO_1 0x01<<5
+#define TX_DIRECT_MODE_GPIO_2 0x02<<5
+#define TX_DIRECT_MODE_GPIO_3 0x03<<5
+#define MOD_SOURCE_FIFO 0x00<<3
+#define MOD_SOURCE_PIN 0x01<<3
+#define MOD_SOURCE_RAND 0x02<<3  
+#define MOD_TYPE_CW 0x00 
+#define MOD_TYPE_OOK 0x01 
+#define MOD_TYPE_2FSK 0x02 
+#define MOD_TYPE_2GFSK 0x03 
+#define MOD_TYPE_4FSK 0x04 
+#define MOD_TYPE_4GFSK 0x05 
+  
   Si4463_CS(1);
   SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x00);   //GROUP - group 0x00
-  SPI_sendByte(0x01);   //NUM_PROPS - 1 proporties to write
-  SPI_sendByte(0x03);   //START_PROP - start from 0x03
-  SPI_sendByte(0x60);
+  SPI_sendByte(0x20);   //GROUP - group 0x20
+  SPI_sendByte(0x01);   //NUM_PROPS - 12 proporties to write
+  SPI_sendByte(0x00);   //START_PROP - start from 0x00
+  SPI_sendByte(TX_DIRECT_MODE_TYPE_SYNC | TX_DIRECT_MODE_GPIO_1 | MOD_SOURCE_PIN | MOD_TYPE_2GFSK);   //0x2000 - TX direct mode uses gpio1, Modulation source is PIN, GFSK2 modulation 0x2B?
   Si4463_CS(0);
   
   while(Si4463_CTS() != 0xFF){}
 }
 
-void Si4463_RF_INT_CTL_ENABLE_1(){
+void Si4463_PREAMBLE_DISABLE(){         //zostaje
   Si4463_CS(1);
   SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x01);   //GROUP - group 0x01
-  SPI_sendByte(0x01);   //NUM_PROPS - 1 proporties to write
+  SPI_sendByte(0x10);   //GROUP - group 0x20
+  SPI_sendByte(0x01);   //NUM_PROPS - 12 proporties to write
   SPI_sendByte(0x00);   //START_PROP - start from 0x00
-  SPI_sendByte(0x00);   //interrupts dissabled
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_FRR_CTL_A_MODE_4(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x02);   //GROUP - group 0x02
-  SPI_sendByte(0x04);   //NUM_PROPS - 2 proporties to write
-  SPI_sendByte(0x00);   //START_PROP - start from 0x00
-  SPI_sendByte(0x0A);   //by³o 0x00
   SPI_sendByte(0x00);
+  Si4463_CS(0);
+  
+  while(Si4463_CTS() != 0xFF){}
+}
+
+void Si4463_NOSYNC_WORD(){              //zostaje
+  Si4463_CS(1);
+  SPI_sendByte(0x11);   //SET_PROPERTY Command
+  SPI_sendByte(0x11);   //GROUP - group 0x20
+  SPI_sendByte(0x01);   //NUM_PROPS - 12 proporties to write
+  SPI_sendByte(0x11);   //START_PROP - start from 0x00
+  SPI_sendByte(0x01 << 7);
+  Si4463_CS(0);
+  
+  while(Si4463_CTS() != 0xFF){}
+}
+
+void Si4463_NCO_MODULO(){               //zostaje
+  //oversampling
+  Si4463_CS(1);
+  SPI_sendByte(0x11);   //SET_PROPERTY Command
+  SPI_sendByte(0x20);   //GROUP - group 0x20
+  SPI_sendByte(0x04);   //NUM_PROPS - 12 proporties to write
+  SPI_sendByte(0x06);   //START_PROP - start from 0x00
   SPI_sendByte(0x00);
+  SPI_sendByte(0x2D);
+  SPI_sendByte(0xC6);
+  SPI_sendByte(0xC0);
   Si4463_CS(0);
   
   while(Si4463_CTS() != 0xFF){}
 }
 
-void Si4463_RF_MODEM_MOD_TYPE_12(){
+void Si4463_NCO_DATA_RATE_APRS(){       //zostaje
   Si4463_CS(1);
   SPI_sendByte(0x11);   //SET_PROPERTY Command
   SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x0C);   //NUM_PROPS - 12 proporties to write
+  SPI_sendByte(0x03);   //NUM_PROPS - 12 proporties to write
+  SPI_sendByte(0x03);   //START_PROP - start from 0x00
+  SPI_sendByte(0x00);
+  SPI_sendByte(0x11);
+  SPI_sendByte(0x30);
+  Si4463_CS(0);
+  
+  while(Si4463_CTS() != 0xFF){}
+}
+
+
+/*
+uint8_t filter[9] = {0x01,0x03,0x08,0x11,0x21,0x36,0x4D,0x60,0x67};			// default
+	uint8_t filter[9] = {0x81,0x9F,0xC4,0xEE,0x18,0x3E,0x5C,0x70,0x76};			// UTRAK - 6dB@1200 Hz, 4400 Hz
+	uint8_t filter[9] = {0x1d,0xe5,0xb8,0xaa,0xc0,0xf5,0x36,0x6b,0x7f};			// UTRAK - 6dB@1200 Hz, 2400 Hz
+	uint8_t filter[9] = {0x07,0xde,0xbf,0xb9,0xd4,0x05,0x40,0x6d,0x7f};			// UTRAK - 3db@1200 Hz, 2400 Hz
+	uint8_t filter[9] = {0xfa,0xe5,0xd8,0xde,0xf8,0x21,0x4f,0x71,0x7f};			// UTRAK - LP only, 2400 Hz
+	uint8_t filter[9] = {0xd9,0xf1,0x0c,0x29,0x44,0x5d,0x70,0x7c,0x7f};			// UTRAK - LP only, 4800 Hz
+	uint8_t filter[9] = {0xd5,0xe9,0x03,0x20,0x3d,0x58,0x6d,0x7a,0x7f};			// UTRAK - LP only, 4400 Hz
+	uint8_t filter[9] = {0x19,0x21,0x07,0xC8,0x8E,0x9A,0xFB,0x75,0xAD};			// UBSEDS (FIR python)
+	uint8_t filter[9] = {4, 8, 0, 233, 219, 254, 95, 208, 258};				// UBSEDS (FIR python) Low-Pass
+	uint8_t filter[9] = {7, 10, 2, 238, 218, 222, 255, 40, 59};				// MY FILTER (FIR python) - no pre-emphasis
+	uint8_t filter[9] = {6, 10, 6, 244, 224, 224, 251, 32, 50};				// MY FILTER (FIR python) - 6.14dB ripple
+	uint8_t filter[9] = {253, 24, 24, 216, 109, 83, 224, 195, 307};				// MY FILTER (FIR python) - 16000Hz-900Hz-3025Hz
+	uint8_t filter[9] = {0xE4,0xC8,0xAD,0xA7,0xC4,0x01,0x4F,0x90,0xAA};			// MY FILTER (FIR python) - experimental
+        uint8_t filter[9] = {0x81, 0x9f, 0xc4, 0xee, 0x18, 0x3e, 0x5c, 0x70, 0x76};           //pecan
+*/
+void Si4463_AFSK_FILTER(){              //zostaje
+  uint8_t filter[9] = {0x01,0x03,0x08,0x11,0x21,0x36,0x4D,0x60,0x67};
+  //uint8_t filter[9] = {0x19,0x21,0x07,0xC8,0x8E,0x9A,0xFB,0x75,0xAD};			// UBSEDS (FIR python)
+  
+  Si4463_CS(1);
+  SPI_sendByte(0x11);															// SET_PROPERTY (cmd)
+  SPI_sendByte(0x20);															// MODEM (group)
+  SPI_sendByte(0x09);															// 9 (num_props)
+  SPI_sendByte(0x0F);															// MODEM_TX_FILTER_COEFF (start_prop)
+  SPI_sendByte(filter[8]);													// (data) - MODEM_TX_FILTER_COEFF_8
+  SPI_sendByte(filter[7]);													// (data) - MODEM_TX_FILTER_COEFF_7
+  SPI_sendByte(filter[6]);													// (data) - MODEM_TX_FILTER_COEFF_6
+  SPI_sendByte(filter[5]);													// (data) - MODEM_TX_FILTER_COEFF_5
+  SPI_sendByte(filter[4]);													// (data) - MODEM_TX_FILTER_COEFF_4
+  SPI_sendByte(filter[3]);													// (data) - MODEM_TX_FILTER_COEFF_3
+  SPI_sendByte(filter[2]);													// (data) - MODEM_TX_FILTER_COEFF_2
+  SPI_sendByte(filter[1]);													// (data) - MODEM_TX_FILTER_COEFF_1
+  SPI_sendByte(filter[0]);													// (data) - MODEM_TX_FILTER_COEFF_0;
+  Si4463_CS(0);
+  
+  while(Si4463_CTS() != 0xFF){}
+}
+
+void Si4463_FREQ(){                     //zostaje
+  Si4463_CS(1);
+  SPI_sendByte(0x11);   //SET_PROPERTY Command
+  SPI_sendByte(0x20);   //GROUP - group 0x40
+  SPI_sendByte(0x01);   //NUM_PROPS - 8 proporties to write
+  SPI_sendByte(0x51);   //START_PROP - start from 0x00
+  SPI_sendByte(2+8);   //BAND
+
+  Si4463_CS(0);
+  
+  while(Si4463_CTS() != 0xFF){}
+  
+  
+  Si4463_CS(1);
+  SPI_sendByte(0x11);   //SET_PROPERTY Command
+  SPI_sendByte(0x40);   //GROUP - group 0x40
+  SPI_sendByte(0x04);   //NUM_PROPS - 8 proporties to write
   SPI_sendByte(0x00);   //START_PROP - start from 0x00
-  SPI_sendByte(0x2a);   //0x2000 - TX direct mode uses gpio1, Modulation source is PIN, GFSK2 modulation 0x2B?
-  SPI_sendByte(0x80);   //0x2001 - Disable Manchester coding 
-  SPI_sendByte(0x07);   //0x2002 - MODEM_DSM_CTRL
-  SPI_sendByte(0x01);   //0x2003 - MODEM_DATA_RATE 0x05
-  SPI_sendByte(0xD4);   //0x2004 - MODEM_DATA_RATE 0x86
-  SPI_sendByte(0xC0);   //0x2005 - MODEM_DATA_RATE 0xA0
-  SPI_sendByte(0x00);   //0x2006 - MODEM_TX_NCO_MODE_3 0x01
-  SPI_sendByte(0x2D);   //0x2007 - MODEM_TX_NCO_MODE_2 0xC9
-  SPI_sendByte(0xC6);   //0x2008 - MODEM_TX_NCO_MODE_1 0xC3
-  SPI_sendByte(0xC0);   //0x2009 - MODEM_TX_NCO_MODE_0 0x80
-  SPI_sendByte(0x00);   //0x200A - MODEM_FREQ_DEV_2
-  SPI_sendByte(0x00);   //0x200B - MODEM_FREQ_DEV_1
+  SPI_sendByte(0x38);   //0x4000 - Frac-N PLL Synthesizer integer divide number
+  SPI_sendByte(0x0D);   //0x4001 - Frac-N PLL fraction number
+  SPI_sendByte(0xDD);   //0x4002 - Frac-N PLL fraction number
+  SPI_sendByte(0xDD);   //0x4003 - Frac-N PLL fraction number
   Si4463_CS(0);
   
   while(Si4463_CTS() != 0xFF){}
 }
 
-void Si4463_RF_MODEM_FREQ_DEV_0_1(){
+void Si4463_DEVIATION(){                //zostaje
+#define DEVIATION ((((uint32_t)1 << 19) * 8 * 1300.0)/(2*30000000UL))*2
   Si4463_CS(1);
   SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x01);   //NUM_PROPS - 1 proporties to write
-  SPI_sendByte(0x0C);   //START_PROP - start from 0x0C
-  SPI_sendByte(0xEA);   //17-bit unsigned TX frequency deviation word 0x1F
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_TX_RAMP_DELAY_8(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x08);   //NUM_PROPS - 8 proporties to write
-  SPI_sendByte(0x18);   //START_PROP - start from 0x18
-  SPI_sendByte(0x01);   //0x2018 - TX ramp-down delay setting
-  SPI_sendByte(0x00);   //0x2019 - MDM control
-  SPI_sendByte(0x08);   //0x201A - Selects Fixed-IF, Scaled-IF, or Zero-IF mode of RX Modem operation
-  SPI_sendByte(0x02);   //0x201B - the IF frequency setting (an 18-bit signed number)
-  SPI_sendByte(0x80);   //0x201C - the IF frequency setting (an 18-bit signed number)
-  SPI_sendByte(0x00);   //0x201D - the IF frequency setting (an 18-bit signed number)
-  SPI_sendByte(0x00);   //0x201E - Specifies three decimator ratios for the Cascaded Integrator Comb (CIC) filter
-  SPI_sendByte(0x10);   //0x201F - Specifies three decimator ratios for the Cascaded Integrator Comb (CIC) filter
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_BCR_OSR_1_9(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x09);   //NUM_PROPS - 9 proporties to write
-  SPI_sendByte(0x22);   //START_PROP - start from 0x18
-  SPI_sendByte(0x00);   //0x2018 - RX BCR/Slicer oversampling rate (12-bit unsigned number)
-  SPI_sendByte(0x53);   //0x2019 - RX BCR/Slicer oversampling rate (12-bit unsigned number)
-  SPI_sendByte(0x06);   //0x201A - RX BCR NCO offset value (an unsigned 22-bit number)
-  SPI_sendByte(0x24);   //0x201B - RX BCR NCO offset value (an unsigned 22-bit number)
-  SPI_sendByte(0xDD);   //0x201C - RX BCR NCO offset value (an unsigned 22-bit number)
-  SPI_sendByte(0x07);   //0x201D - The unsigned 11-bit RX BCR loop gain value
-  SPI_sendByte(0xFF);   //0x201E - The unsigned 11-bit RX BCR loop gain value
-  SPI_sendByte(0x02);   //0x201F - RX BCR loop gear control
-  SPI_sendByte(0x00);   //0x201F - Miscellaneous control bits for the RX BCR loop
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_AFC_GEAR_7(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x07);   //NUM_PROPS - 7 proporties to write
-  SPI_sendByte(0x2C);   //START_PROP - start from 0x2C
-  SPI_sendByte(0x00);   //0x202C - RX AFC loop gear control
-  SPI_sendByte(0x23);   //0x202D - RX AFC loop wait time control
-  SPI_sendByte(0x8F);   //0x202E - Sets the gain of the PLL-based AFC acquisition loop, and provides miscellaneous control bits for AFC functionality
-  SPI_sendByte(0xFF);   //0x202F - Sets the gain of the PLL-based AFC acquisition loop, and provides miscellaneous control bits for AFC functionality
-  SPI_sendByte(0x00);   //0x2030 - Set the AFC limiter value
-  SPI_sendByte(0xB5);   //0x2031 - Set the AFC limiter value
-  SPI_sendByte(0xA0);   //0x2032 - Specifies miscellaneous AFC control bits
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_AGC_CONTROL_1(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x01);   //NUM_PROPS - 1 proporties to write
-  SPI_sendByte(0x35);   //START_PROP - start from 0x35
-  SPI_sendByte(0xE2);   //0x2035 - Miscellaneous control bits for the Automatic Gain Control (AGC) function in the RX Chain
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_AGC_WINDOW_SIZE_9(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x09);   //NUM_PROPS - 9 proporties to write
-  SPI_sendByte(0x38);   //START_PROP - start from 0x38
-  SPI_sendByte(0x11);   //0x2038 - Specifies the size of the measurement and settling windows for the AGC algorithm
-  SPI_sendByte(0x12);   //0x2039 - Sets the decay time of the RF peak detectors
-  SPI_sendByte(0x12);   //0x203A - Sets the decay time of the IF peak detectors
-  SPI_sendByte(0x00);   //0x203B - Specifies the gain factor of the secondary branch in 4(G)FSK ISI-suppression
-  SPI_sendByte(0x02);   //0x203C - Specifies the gain factor of the primary branch in 4(G)FSK ISI-suppression
-  SPI_sendByte(0x06);   //0x203D - 16 bit 4(G)FSK slicer threshold
-  SPI_sendByte(0x00);   //0x203E - 16 bit 4(G)FSK slicer threshold
-  SPI_sendByte(0x00);   //0x203F - 4(G)FSK symbol mapping code
-  SPI_sendByte(0x28);   //0x2040 - Configures the attack and decay times of the OOK Peak Detector
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_OOK_CNT1_8(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x08);   //NUM_PROPS - 8 proporties to write
-  SPI_sendByte(0x42);   //START_PROP - start from 0x42
-  SPI_sendByte(0x84);   //0x2042 - OOK control
-  SPI_sendByte(0x03);   //0x2043 - Selects the detector(s) used for demodulation of an OOK signal, or for demodulation of a (G)FSK signal when using the asynchronous demodulator
-  SPI_sendByte(0xD6);   //0x2044 - Defines and controls the search period length for the Moving Average and Min-Max detectors
-  SPI_sendByte(0x03);   //0x2045 - Defines gain and enable controls for raw / nonstandard mode
-  SPI_sendByte(0x00);   //0x2046 - 11 bit eye-open detector threshold
-  SPI_sendByte(0x26);   //0x2047 - 11 bit eye-open detector threshold
-  SPI_sendByte(0x01);   //0x2048 - Antenna diversity mode settings
-  SPI_sendByte(0x80);   //0x2049 - Specifies controls for the Antenna Diversity algorithm
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_RSSI_COMP_1(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x01);   //NUM_PROPS - 1 proporties to write
-  SPI_sendByte(0x4E);   //START_PROP - start from 0x4E
-  SPI_sendByte(0x40);   //0x204E - RSSI compensation value
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_CLKGEN_BAND_1(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x20);   //GROUP - group 0x20
-  SPI_sendByte(0x01);   //NUM_PROPS - 1 proporties to write
-  SPI_sendByte(0x51);   //START_PROP - start from 0x51
-  SPI_sendByte(0x0D);   //0x2051 - Select PLL Synthesizer output divider ratio as a function of frequency band by³o 0x0A
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_CHFLT_RX1_CHFLT_COE13_7_0_12(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x21);   //GROUP - group 0x21
-  SPI_sendByte(0x0C);   //NUM_PROPS - 12 proporties to write
-  SPI_sendByte(0x00);   //START_PROP - start from 0x00
-  SPI_sendByte(0x23);   //0x2100 - Filter coefficients for the first set of RX filter coefficients
-  SPI_sendByte(0x17);   
-  SPI_sendByte(0xF4);   
-  SPI_sendByte(0xC2);   
-  SPI_sendByte(0x88);   
-  SPI_sendByte(0x50);   
-  SPI_sendByte(0x21);   
-  SPI_sendByte(0xFF);   
-  SPI_sendByte(0xEC);   
-  SPI_sendByte(0xE6);   
-  SPI_sendByte(0xE8);   
-  SPI_sendByte(0xEE);   
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_CHFLT_RX1_CHFLT_COE1_7_0_12(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x21);   //GROUP - group 0x21
-  SPI_sendByte(0x0C);   //NUM_PROPS - 12 proporties to write
-  SPI_sendByte(0x0C);   //START_PROP - start from 0x0C
-  SPI_sendByte(0xF6);   //0x210C - Filter coefficients for the first set of RX filter coefficients
-  SPI_sendByte(0xFB);   
-  SPI_sendByte(0x05);   
-  SPI_sendByte(0xC0);   
-  SPI_sendByte(0xFF);   
-  SPI_sendByte(0x0F);   
-  SPI_sendByte(0x23);   //0x2112 - Filter coefficients for the second set of RX filter coefficients
-  SPI_sendByte(0x17);   
-  SPI_sendByte(0xF4);   
-  SPI_sendByte(0xC2);   
-  SPI_sendByte(0x88);   
-  SPI_sendByte(0x50);   
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
-
-void Si4463_RF_MODEM_CHFLT_RX2_CHFLT_COE7_7_0_12(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x21);   //GROUP - group 0x21
-  SPI_sendByte(0x0C);   //NUM_PROPS - 12 proporties to write
-  SPI_sendByte(0x18);   //START_PROP - start from 0x18
-  SPI_sendByte(0x21);   //0x2118 - Filter coefficients for the first set of RX filter coefficients
-  SPI_sendByte(0xFF);   
-  SPI_sendByte(0xEC);   
-  SPI_sendByte(0xE6);   
-  SPI_sendByte(0xE8);   
-  SPI_sendByte(0xEE);   
-  SPI_sendByte(0xF6);   
-  SPI_sendByte(0xFB);   
-  SPI_sendByte(0x05);   
-  SPI_sendByte(0xC0);   
-  SPI_sendByte(0xFF);   
-  SPI_sendByte(0x0F);   
+  SPI_sendByte(0x20);   //GROUP - group 0x40
+  SPI_sendByte(0x03);   //NUM_PROPS - 8 proporties to write
+  SPI_sendByte(0x0a);   //START_PROP - start from 0x00
+  SPI_sendByte(0x00);   
+  SPI_sendByte(0x00);   
+  SPI_sendByte(0xB5);     
   Si4463_CS(0);
   
   while(Si4463_CTS() != 0xFF){}
@@ -447,42 +348,10 @@ void Si4463_RF_PA_MODE_4(){
   while(Si4463_CTS() != 0xFF){}
 }
 
-void Si4463_RF_SYNTH_PFDCP_CPFF_7(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x23);   //GROUP - group 0x23
-  SPI_sendByte(0x07);   //NUM_PROPS - 7 proporties to write
-  SPI_sendByte(0x00);   //START_PROP - start from 0x00
-  SPI_sendByte(0x2C);   //0x2300 - Feed forward charge pump current selection
-  SPI_sendByte(0x0E);   //0x2301 - Integration charge pump current selection
-  SPI_sendByte(0x0B);   //0x2302 - Gain scaling factors (Kv) for the VCO tuning varactors on both the integrated-path and feed forward path
-  SPI_sendByte(0x04);   //0x2303 - Value of resistor R2 in feed-forward path of loop filter
-  SPI_sendByte(0x0C);   //0x2304 - Value of capacitor C2 in feed-forward path of loop filter
-  SPI_sendByte(0x73);   //0x2305 - Value of capacitors C1 and C3 in feed-forward path of loop filter
-  SPI_sendByte(0x03);   //0x2306 - Bias current of the active amplifier in the feed-forward loop filter
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
 
-void Si4463_RF_FREQ_CONTROL_INTE_8(){
-  Si4463_CS(1);
-  SPI_sendByte(0x11);   //SET_PROPERTY Command
-  SPI_sendByte(0x40);   //GROUP - group 0x40
-  SPI_sendByte(0x08);   //NUM_PROPS - 8 proporties to write
-  SPI_sendByte(0x00);   //START_PROP - start from 0x00
-  SPI_sendByte(0x38);   //0x4000 - Frac-N PLL Synthesizer integer divide number
-  SPI_sendByte(0x0D);   //0x4001 - Frac-N PLL fraction number
-  SPI_sendByte(0xDD);   //0x4002 - Frac-N PLL fraction number
-  SPI_sendByte(0xDD);   //0x4003 - Frac-N PLL fraction number
-  SPI_sendByte(0x44);   //0x4004 - EZ Frequency Programming channel step size
-  SPI_sendByte(0x44);   //0x4005 - EZ Frequency Programming channel step size
-  SPI_sendByte(0x20);   //0x4006 - Set window gating period (in number of crystal reference clock cycles) for counting VCO frequency during calibration
-  SPI_sendByte(0xFE);   //0x4007 - Adjust target count for VCO calibration in RX mode
-  Si4463_CS(0);
-  
-  while(Si4463_CTS() != 0xFF){}
-}
+
+
+
 
 void Si4463_ActivateTX(){
   Si4463_CS(1);
@@ -510,16 +379,6 @@ void Si4463_ActivateRX(){
   while(Si4463_CTS() != 0xFF){}
 }
 
-void Si4463_ClearInt(){
-  Si4463_CS(1);
-  SPI_sendByte(0x20);   
-  SPI_sendByte(0x00);   
-  SPI_sendByte(0x00);   
-  SPI_sendByte(0x00);   
-  Si4463_CS(0);
-  Delay(1000);
-  while(Si4463_CTS() != 0xFF){}
-}
 
 void Si4463_TX(){
   TIM2_ITConfig(TIM2_IT_UPDATE, ENABLE);
@@ -527,7 +386,7 @@ void Si4463_TX(){
   Delay(1000);
   Si4463_ON();
   Delay(1000);
-  Si4463_Init();
+  Si4463_Init_AFSK();
   Si4463_ActivateTX();
 }
 
@@ -537,7 +396,7 @@ void Si4463_RX(){
   Delay(1000);
   Si4463_ON();
   Delay(1000);
-  Si4463_Init();
+  Si4463_Init_AFSK();
   Si4463_ActivateRX();
   
 }

@@ -1,6 +1,11 @@
 #ifndef __FLASH_H
 #define __FLASH_H
 
+#define TX_DEVIATION_RTTY	26 
+#define TX_DEVIATION_APRS	688
+#define TX_DEVIATION_APRS_1200	324						// manual pre-emphasis
+#define TX_DEVIATION_APRS_2200	589						// manual pre-emphasis
+
 uint8_t Si4463_PartInfo();
 uint8_t Si4463_FuncInfo();
 void Si4463_CS(uint8_t);
@@ -36,4 +41,16 @@ void Si4463_ActivateRX();
 void Si4463_TX();
 void Si4463_RX();
 
+void Si4463_Init_AFSK();
+void Si4463_MODULATION();
+void Si4463_PREAMBLE_DISABLE();
+void Si4463_NOSYNC_WORD();
+void Si4463_NCO_MODULO();
+void Si4463_NCO_DATA_RATE_APRS();
+void Si4463_AFSK_FILTER();
+void Si4463_FREQ();
+void Si4463_DEVIATION();
+void Si4463_XO_TUNE();
+
+void SI4060_filter_coeffs();
 #endif
