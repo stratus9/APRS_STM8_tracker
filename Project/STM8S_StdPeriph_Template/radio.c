@@ -191,7 +191,7 @@ void Si4463_MODULATION(){               //zostaje
   SPI_sendByte(0x20);   //GROUP - group 0x20
   SPI_sendByte(0x01);   //NUM_PROPS - 12 proporties to write
   SPI_sendByte(0x00);   //START_PROP - start from 0x00
-  SPI_sendByte(TX_DIRECT_MODE_TYPE_SYNC | TX_DIRECT_MODE_GPIO_1 | MOD_SOURCE_PIN | MOD_TYPE_2GFSK);   //0x2000 - TX direct mode uses gpio1, Modulation source is PIN, GFSK2 modulation 0x2B?
+  SPI_sendByte(TX_DIRECT_MODE_TYPE_SYNC | TX_DIRECT_MODE_GPIO_1 | MOD_SOURCE_PIN | MOD_TYPE_2FSK);   //0x2000 - TX direct mode uses gpio1, Modulation source is PIN, GFSK2 modulation 0x2B?
   Si4463_CS(0);
   
   while(Si4463_CTS() != 0xFF){}
@@ -340,7 +340,7 @@ void Si4463_RF_PA_MODE_4(){
   SPI_sendByte(0x04);   //NUM_PROPS - 4 proporties to write
   SPI_sendByte(0x00);   //START_PROP - start from 0x00
   SPI_sendByte(0x08);   //0x2200 - Selects the PA operating mode, and selects resolution of PA power adjustment (i.e., step size)
-  SPI_sendByte(0x01);   //0x2201 - Configuration of PA output power level
+  SPI_sendByte(0x07);   //0x2201 - Configuration of PA output power level
   SPI_sendByte(0x00);   //0x2202 - Configuration of the PA Bias and duty cycle of the TX clock source
   SPI_sendByte(0x3D);   //0x2203 - Configuration of PA ramping parameters
   Si4463_CS(0);

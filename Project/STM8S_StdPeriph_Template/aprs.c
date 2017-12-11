@@ -65,7 +65,7 @@ void APRS_PreparePacket(APRS_t * APRS){
   uint8_t * aprs_buffer = (APRS->aprs_buffer);
   
   uint8_t pos = 0;
-  char APRS_destination[6] = "APRS  ";
+  char APRS_destination[6] = "APECAN";
   char APRS_callsign[6] = APRS_CALLSIGN;
   char APRS_path[6] = PATH;
   
@@ -111,7 +111,12 @@ void APRS_PreparePacket(APRS_t * APRS){
   
   // Frame Check Sequence - CRC-16-CCITT (0xFFFF)
 	uint16_t crc = 0xFFFF;
-	for(uint16_t i = 0; i < (pos - APRS_FLAGS); i++) crc = crc_ccitt_update(crc, aprs_buffer[APRS_FLAGS+i]);
+	for(uint16_t i = 0; i < (pos - APRS_FLAGS); i++){ 
+                
+                crc = crc_ccitt_update(crc, aprs_buffer[APRS_FLAGS+i]);
+                APRS->crc = crc;
+                APRS->tmp = aprs_buffer[APRS_FLAGS+i];
+        }
 	crc = ~crc;
 	aprs_buffer[pos++] = crc & 0xFF;					        	// FCS is sent low-byte first
 	aprs_buffer[pos++] = (crc >> 8) & 0xFF;							// and with the bits flipped

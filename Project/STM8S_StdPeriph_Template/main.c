@@ -33,14 +33,17 @@
 #include "SPI.h"
 #include "timer.h"
 #include "UART.h"
+#include "struct.h"
+#include "aprs.h"
 
 /* Private defines -----------------------------------------------------------*/
 #define AX25_FLAG 0x7E
 char tx_buffer[256];
 char tx_buffer_head = 0;
 char tx_buffer_tail = 0;
-
-
+APRS_t APRS_d;
+gps_t gps_d;
+sensors_t sensors_d;
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -69,11 +72,11 @@ void main(void)
   /* Infinite loop */
                 
   while (1){
-    for(uint8_t i = 0; i< 25; i++) tx_buffer_queue(0x7E);
-    
-    tx_buffer_string("APRS,TCPXX*,qAX,CWOP-5:@072357z4123.75N/09459.60W_218/004g008t020r000p000P000h43b10104eCumulusFO");
-    tx_buffer_queue(0x7E);
-    
+    //tx_buffer_string("APRS,TCPXX*,qAX,CWOP-5:@072357z4123.75N/09459.60W_218/004g008t020r000p000P000h43b10104eCumulusFO");
+    //tx_buffer_queue(0x7E);
+    APRS_PreparePoosition(&APRS_d, &gps_d, &sensors_d);
+    APRS_PreparePacket(&APRS_d);
+    tx_buffer_string(APRS_d.aprs_buffer);
     
     /* do we have any data to transmit? */
     if (!tx_buffer_empty()) {

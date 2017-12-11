@@ -21,6 +21,8 @@ typedef struct {
   uint8_t aprs_buffer[128];
   uint8_t aprs_buffer_length;
   uint8_t aprs_buffer_sent;
+  uint16_t crc;
+  uint8_t tmp;
 } APRS_t;
 
 #endif

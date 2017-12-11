@@ -29,7 +29,7 @@ uint16_t crc_ccitt_update(uint16_t crc, uint8_t data);
 #define APRS_CALLSIGN "BARTEK"							// 6 characters (fill the rest with 'space')
 #define SSID 11											// APRS source address SSID
 #define DSSID 1											// APRS destination address SSID
-#define PATH "WIDE2 "
+#define PATH "WIDE2-"
 
 #include "struct.h"
 void calcDMH(long x, int8_t* degrees, uint8_t* minutes, uint8_t* h_minutes);
