@@ -1,8 +1,4 @@
 ﻿C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\Project.pbd
-C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\aprs.pbi
-C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\main.pbi
-C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\radio.pbi
-C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\SPI.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_awu.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_beep.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_clk.pbi
@@ -10,7 +6,6 @@ C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_flash.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_gpio.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_i2c.pbi
-C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_it.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_itc.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_iwdg.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_rst.pbi
@@ -20,5 +15,10 @@ C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_tim4.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_uart1.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_wwdg.pbi
+C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\aprs.pbi
+C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\main.pbi
+C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\radio.pbi
+C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\SPI.pbi
+C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\stm8s_it.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\timer.pbi
 C:\Users\bartek\Documents\Atmel Studio\Git\APRS_STM8_tracker\v1\EWSTM8\STM8S208\Obj\UART.pbi

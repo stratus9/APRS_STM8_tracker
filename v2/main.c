@@ -33,9 +33,9 @@
 /* Private defines -----------------------------------------------------------*/
 #define AX25_FLAG 0x7E
 #define CRC_POLY 0x8408
-#define APRS_DEST_CALLSIGN				"APECAN" // APExxx = Pecan device
+#define APRS_DEST_CALLSIGN				"ROCKET" // APExxx = Pecan device
 #define APRS_DEST_SSID                                  0
-#define APRS_OWN_CALLSIGN				"SP5RZP"
+#define APRS_OWN_CALLSIGN				"BARTEK"
 ax25_t APRS_frame;
 
 #define RADIO_CLK	30000000UL
@@ -82,7 +82,10 @@ void main(void)
   /* Infinite loop */
   
   
-  aprs_encode_message(&APRS_frame, "SP5RZP", 1, "WIDE2-2", 40, "!5225.85NS01654.50E#PHG4480 SPn,W5 Poznan Digi");
+  // nie dziala dalej z ! aprs_encode_message(&APRS_frame, "BARTEK", 11, "WIDE2-1", 11, "!0123.22N/14345.33SO/A=123456/P3S4T12V12V");
+  aprs_encode_message(&APRS_frame, "BARTEK", 11, "WIDE2-1", 11, ";Carbonara*141923/3859.11N/07629.23WO165/027/A=001234/Clb=5.0m/s State=Boost Status=OK");
+  //aprs_encode_message(&APRS_frame, "BARTEK", 11, "WIDE2-1", 11, "@141923/3859.11N/07629.23WO165/027/A=001234/comments");
+  //aprs_encode_message(&APRS_frame, "BARTEK", 11, "WIDE2-1", 11, "@141923/5225.85N/01654.50E#PHG4480 SPn,W5 Poznan Digi");
   while (1){
     //do we have any data to transmit?
     if (APRS_frame.point <= APRS_frame.size) {
@@ -669,8 +672,8 @@ void ax25_add_header(ax25_t *packet, uint8_t *callsign, uint8_t ssid, uint8_t *p
   for(i=0; i<preamble; i++) ax25_add_sync(packet);
 
   // Send flag
-  //for(uint8_t i=0; i<preamble; i++) ax25_add_flag(packet);
-  ax25_add_flag(packet);
+  for(uint8_t i=0; i<preamble; i++) ax25_add_flag(packet);
+  //ax25_add_flag(packet);
 
   ax25_add_path(packet, APRS_DEST_CALLSIGN, APRS_DEST_SSID, 0);	// Destination callsign
   ax25_add_path(packet, callsign, ssid, path[0] == 0 || path == 0);	// Source callsign
@@ -713,37 +716,46 @@ void ax25_add_footer(ax25_t *packet){
   uint16_t final_crc = ax25_CRC(packet);
 
   // Send CRC
-  ax25_add_byte(packet, ~(final_crc & 0xff));
+  ax25_add_byte(packet, (final_crc & 0xff));
   final_crc >>= 8;
-  ax25_add_byte(packet, ~(final_crc & 0xff));
+  ax25_add_byte(packet, (final_crc & 0xff));
 
   // Signal the end of frame
   ax25_add_flag(packet);
 }
 
-uint16_t ax25_CRC(ax25_t *packet){              //--------------NIEPEWNE
-  /*
-  uint8_t i;
+uint16_t ax25_CRC(ax25_t *packet){              //
+  
+  uint8_t i = 0;
   uint8_t j;
   uint16_t crc_reg = 0xFFFF;
+  uint8_t data_tmp;
 
   // No data so return zeros 
   if (packet->size == 0)
       return (~crc_reg);
-
+  
+  //find preamble end
+  while(packet->data[i] != 0xA4){
+    i++;
+    if(i > 100) return 0;
+  }
+  
   // Loop through each byte 
-  for (i = 0; i < packet->size; i++) {
+  for (; i < packet->size; i++) {
+    data_tmp = packet->data[i];
     // Loop through each bit 
-    for (j=0; j < 8; j++, packet->data[i] >>= 1) {
-      if ((crc_reg & 0x0001) ^ (packet->data[i] & 0x0001)) crc_reg = (crc_reg >> 1) ^ CRC_POLY;
+    for (j=0; j < 8; j++, data_tmp >>= 1) {
+      if ((crc_reg & 0x0001) ^ (data_tmp & 0x0001)) 
+            crc_reg = (crc_reg >> 1) ^ CRC_POLY;
        else  crc_reg >>= 1;
     }
   }
+
   // Return 1's complement
   packet->crc = (~crc_reg);
   return (~crc_reg);
-  */
-  return 0xffff;
+  //return 0xffff;
 }
 
 void ax25_add_sync(ax25_t *packet){
@@ -786,13 +798,9 @@ uint32_t aprs_encode_message(ax25_t* buffer, uint8_t * callsign, uint8_t ssid, u
 
   // Encode APRS header
   ax25_add_header(buffer, callsign, ssid, path, preamble);
-  ax25_add_byte(buffer, ':');              //identyfikator typu wiadomoœci
-  ax25_add_byte(buffer, ':');
-  ax25_add_string(buffer, "         ");
-  ax25_add_byte(buffer, ':');
+  
+  // Encode message
   ax25_add_string(buffer, text);
-  ax25_add_byte(buffer, '{');
-  ax25_add_byte(buffer, '1');
 
   // Send footer
   ax25_add_footer(buffer);
